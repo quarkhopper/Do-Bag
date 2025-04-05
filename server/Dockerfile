@@ -1,25 +1,18 @@
-FROM node:20-alpine as development
+FROM node:18-slim
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
 
+# Install dependencies
 RUN npm install
 
+# Copy source code
 COPY . .
 
-CMD ["npm", "run", "dev"]
-
-FROM node:20-alpine as production
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install --production
-
-COPY . .
-
+# Build TypeScript
 RUN npm run build
 
-CMD ["npm", "start"] 
+# Start the server
+CMD ["node", "dist/index.js"] 
