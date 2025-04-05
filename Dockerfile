@@ -1,25 +1,34 @@
-FROM node:18-slim
+# Build stage
+FROM node:18-slim as builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Install TypeScript globally
-RUN npm install -g typescript
-
-# Copy server package files and TypeScript config
+# Copy package files and TypeScript config
 COPY server/package*.json ./
 COPY server/tsconfig.json ./
 
 # Install dependencies
 RUN npm install
 
-# Create src directory
-RUN mkdir -p src
-
-# Copy server source code
+# Copy source code
 COPY server/src ./src
 
 # Build TypeScript
 RUN npm run build
+
+# Production stage
+FROM node:18-slim
+
+WORKDIR /app
+
+# Copy package files
+COPY server/package*.json ./
+
+# Install production dependencies only
+RUN npm install --production
+
+# Copy built files from builder stage
+COPY --from=builder /build/dist ./dist
 
 # Start the server
 CMD ["node", "dist/index.js"] 
