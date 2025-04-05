@@ -21,7 +21,7 @@ const pool = new Pool({
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? 'https://do-bag.vercel.app'
+    ? ['https://do-bag.vercel.app', 'https://your-vercel-domain.vercel.app']
     : 'http://localhost:5173'
 }));
 app.use(express.json());
