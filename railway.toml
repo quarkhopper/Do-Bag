@@ -1,10 +1,10 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install && npm run build"
+buildCommand = "cd server && npm install && npm run build"
 rootDirectory = "server"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "cd server && npm start"
 restartPolicyType = "ON_FAILURE"
 healthcheckPath = "/health"
 healthcheckTimeout = 100 
