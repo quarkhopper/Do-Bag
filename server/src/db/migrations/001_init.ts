@@ -1,5 +1,7 @@
 import { Pool } from 'pg';
 
+const migrationName = '001_init';
+
 export async function up(pool: Pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -20,4 +22,6 @@ export async function down(pool: Pool) {
   await pool.query(`
     DROP TABLE IF EXISTS tasks;
   `);
-} 
+}
+
+export { migrationName }; 

@@ -1,8 +1,14 @@
 import { Pool } from 'pg';
 import * as init from './migrations/001_init';
 
-const migrations = [
-  init
+interface Migration {
+  up: (pool: Pool) => Promise<void>;
+  down: (pool: Pool) => Promise<void>;
+  migrationName: string;
+}
+
+const migrations: Migration[] = [
+  init as Migration
 ];
 
 export async function runMigrations(pool: Pool) {
@@ -24,12 +30,11 @@ export async function runMigrations(pool: Pool) {
 
     // Run pending migrations
     for (const migration of migrations) {
-      const migrationName = migration.name || 'init';
-      if (!executedMigrations.has(migrationName)) {
-        console.log(`Running migration: ${migrationName}`);
+      if (!executedMigrations.has(migration.migrationName)) {
+        console.log(`Running migration: ${migration.migrationName}`);
         await migration.up(pool);
-        await pool.query('INSERT INTO migrations (name) VALUES ($1)', [migrationName]);
-        console.log(`Completed migration: ${migrationName}`);
+        await pool.query('INSERT INTO migrations (name) VALUES ($1)', [migration.migrationName]);
+        console.log(`Completed migration: ${migration.migrationName}`);
       }
     }
 
