@@ -1,5 +1,5 @@
 {
-  "framework": "vite",
-  "buildCommand": "pwd && ls -la && npm install && npm run build",
+  "installCommand": "pwd",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist"
 } 
