@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { query } from '../db';
 
-const router = Router();
+export const taskRouter = Router();
 
 const TaskSchema = z.object({
   text: z.string().min(1),
@@ -12,7 +12,7 @@ const TaskSchema = z.object({
 });
 
 // Get all tasks
-router.get('/', async (req, res, next) => {
+taskRouter.get('/', async (req, res, next) => {
   try {
     const result = await query(
       'SELECT * FROM tasks ORDER BY position ASC',
@@ -25,7 +25,7 @@ router.get('/', async (req, res, next) => {
 });
 
 // Create task
-router.post('/', async (req, res, next) => {
+taskRouter.post('/', async (req, res, next) => {
   try {
     const task = TaskSchema.parse(req.body);
     const result = await query(
@@ -41,7 +41,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // Update task
-router.patch('/:id', async (req, res, next) => {
+taskRouter.patch('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const task = TaskSchema.partial().parse(req.body);
@@ -67,4 +67,6 @@ router.patch('/:id', async (req, res, next) => {
   }
 });
 
-export const taskRouter = router; 
+taskRouter.get('/', (req, res) => {
+  res.json({ message: 'Tasks endpoint' });
+}); 
