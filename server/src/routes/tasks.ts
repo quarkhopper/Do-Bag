@@ -65,8 +65,4 @@ taskRouter.patch('/:id', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
-
-taskRouter.get('/', (req, res) => {
-  res.json({ message: 'Tasks endpoint' });
 }); 
