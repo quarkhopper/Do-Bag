@@ -18,9 +18,9 @@ DoBag is a browser-based scheduling tool that adapts to your working style. Unli
 4. Arrange them as you see fit
 
 ### Development
-- Frontend: React + TypeScript (Vercel)
-- Backend: Express + TypeScript (Railway)
-- Database: PostgreSQL (Railway)
+- Frontend: React + TypeScript
+- Backend: Express + TypeScript
+- Database: PostgreSQL
 
 See [architecture.md](docs/architecture.md) for technical details and [project_plan.md](docs/project_plan.md) for roadmap and features.
 
