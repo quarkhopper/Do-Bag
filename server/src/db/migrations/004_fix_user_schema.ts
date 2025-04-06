@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 
-const migrationName = '003_fix_user_schema';
+const migrationName = '004_fix_user_schema';
 
 export async function up(pool: Pool) {
   await pool.query(`

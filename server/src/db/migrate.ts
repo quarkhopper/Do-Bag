@@ -1,7 +1,8 @@
 import { Pool } from 'pg';
 import * as init from './migrations/001_init';
 import * as addUsers from './migrations/002_add_users';
-import * as fixUserSchema from './migrations/003_fix_user_schema';
+import * as addStatusToTasks from './migrations/003_add_status_to_tasks';
+import * as fixUserSchema from './migrations/004_fix_user_schema';
 
 interface Migration {
   up: (pool: Pool) => Promise<void>;
@@ -12,6 +13,7 @@ interface Migration {
 const migrations: Migration[] = [
   init as Migration,
   addUsers as Migration,
+  addStatusToTasks as Migration,
   fixUserSchema as Migration
 ];
 

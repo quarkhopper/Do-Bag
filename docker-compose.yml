@@ -12,7 +12,11 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=http://localhost:3000
+      - CHOKIDAR_USEPOLLING=true  # Enable polling for file watcher
+      - WDS_SOCKET_PORT=0  # Required for WebSocket connection
     command: npm run dev -- --host
+    # Ensure file system notifications work correctly
+    tty: true
 
   backend:
     build:
