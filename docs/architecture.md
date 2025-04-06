@@ -66,26 +66,12 @@ CREATE INDEX tasks_position_idx ON tasks(position);
 ```
 
 ## API Endpoints
-
-### Tasks
-- `GET /api/tasks`
-  - Returns all tasks ordered by position
-  - Query params: none
-  - Response: `Task[]`
-
-- `POST /api/tasks`
-  - Creates a new task
-  - Body: `CreateTaskDTO`
-  - Response: `Task`
-
-- `PATCH /api/tasks/:id`
-  - Updates task properties
-  - Body: `UpdateTaskDTO`
-  - Response: `Task`
-
-- `DELETE /api/tasks/:id`
-  - Removes a task
-  - Response: `204 No Content`
+The REST API provides endpoints for:
+- Retrieving tasks
+- Creating new tasks
+- Updating existing tasks
+- Removing tasks
+- Health check monitoring
 
 ## Deployment Configuration
 
@@ -109,24 +95,10 @@ healthcheckTimeout = 100
 ```
 
 ## Security Measures
-1. **CORS Configuration**:
-   ```typescript
-   app.use(cors({
-     origin: process.env.NODE_ENV === 'production' 
-       ? ['https://do-bag.vercel.app']
-       : 'http://localhost:5173'
-   }));
-   ```
-
-2. **Database Security**:
-   - SSL connections in production
-   - Connection pooling
-   - Prepared statements
-
-3. **Environment Variables**:
-   - Secured in Vercel/Railway
-   - Different configs per environment
-   - No secrets in code
+- CORS configuration for allowed origins
+- Database security best practices
+- Environment-based configurations
+- Secure credential management
 
 ## Development Setup
 1. **Prerequisites**:
@@ -148,15 +120,16 @@ healthcheckTimeout = 100
 
 ## Monitoring
 1. **Health Checks**:
-   - Endpoint: `/health`
-   - Checks: DB connection, API status
-   - Automatic restarts on failure
+   - System health monitoring
+   - Database connection checks
+   - Automatic recovery procedures
 
 2. **Logging**:
-   - Application logs in Railway
-   - Build logs in Vercel
-   - Database logs in Railway
+   - Application logging
+   - Build process logging
+   - Database activity monitoring
 
 3. **Analytics**:
-   - Vercel Analytics for frontend
-   - Railway metrics for backend
+   - Performance metrics
+   - Usage statistics
+   - System health metrics
