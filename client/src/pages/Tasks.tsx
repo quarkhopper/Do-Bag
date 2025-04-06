@@ -45,7 +45,7 @@ const TaskItem = ({
   // Set up drop target
   const [, drop] = useDrop({
     accept: ItemTypes.TASK,
-    hover: (item: { index: number; status: string }, monitor) => {
+    hover: (item: { index: number; status: string }) => {
       if (!ref.current) {
         return;
       }
