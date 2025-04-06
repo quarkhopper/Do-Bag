@@ -12,15 +12,15 @@ DoBag is a browser-based scheduling tool that adapts to your working style. Unli
 - 🔒 No rigid structure - freedom to work your way
 
 ### Quick Start
-1. Visit [https://do-bag.vercel.app](https://do-bag.vercel.app)
+1. Visit [REDACTED]
 2. Add tasks to your day bag
 3. Arrange them as you see fit
 4. Let DoBag learn and help optimize your workflow
 
 ### Development
-- Frontend: React + TypeScript (Vercel)
-- Backend: Express + TypeScript (Railway)
-- Database: PostgreSQL (Railway)
+- Frontend: React + TypeScript
+- Backend: Express + TypeScript
+- Database: PostgreSQL
 
 See [architecture.md](docs/architecture.md) for technical details and [project_plan.md](docs/project_plan.md) for roadmap and features.
 
