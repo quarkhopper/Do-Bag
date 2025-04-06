@@ -12,8 +12,7 @@ const pool = new Pool({
   } : undefined
 });
 
-// Initialize database
-(async () => {
+export async function initializeDatabase() {
   try {
     // Test connection
     await pool.query('SELECT NOW()');
@@ -21,18 +20,24 @@ const pool = new Pool({
     
     // Run migrations
     await runMigrations(pool);
+    console.log('Migrations completed successfully');
   } catch (err) {
     console.error('Database initialization error:', err);
-    process.exit(1);
+    throw err;
   }
-})();
+}
 
 export const query = async (text: string, params?: any[]) => {
   const start = Date.now();
-  const res = await pool.query(text, params);
-  const duration = Date.now() - start;
-  console.log('executed query', { text, duration, rows: res.rowCount });
-  return res;
+  try {
+    const res = await pool.query(text, params);
+    const duration = Date.now() - start;
+    console.log('executed query', { text, duration, rows: res.rowCount });
+    return res;
+  } catch (err) {
+    console.error('Query error:', err);
+    throw err;
+  }
 };
 
 export const getClient = () => pool.connect(); 

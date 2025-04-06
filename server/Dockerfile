@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:18-slim AS development
 
 WORKDIR /app
 
@@ -11,7 +11,21 @@ RUN npm install
 # Copy source code
 COPY . .
 
-# Build TypeScript
+# Start in development mode
+CMD ["npm", "run", "dev"]
+
+FROM node:18-slim AS production
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm install --production
+
+# Copy source code and build
+COPY . .
 RUN npm run build
 
 # Start the server

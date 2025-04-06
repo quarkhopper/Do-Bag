@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import * as init from './migrations/001_init';
+import * as addUsers from './migrations/002_add_users';
 
 interface Migration {
   up: (pool: Pool) => Promise<void>;
@@ -8,7 +9,8 @@ interface Migration {
 }
 
 const migrations: Migration[] = [
-  init as Migration
+  init as Migration,
+  addUsers as Migration
 ];
 
 export async function runMigrations(pool: Pool) {

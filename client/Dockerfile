@@ -1,4 +1,4 @@
-FROM node:20-alpine as development
+FROM node:20-alpine AS development
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY . .
 
 CMD ["npm", "run", "dev"]
 
-FROM node:20-alpine as production
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ COPY . .
 
 RUN npm run build
 
-FROM nginx:alpine as nginx
+FROM nginx:alpine AS nginx
 
 COPY --from=production /app/dist /usr/share/nginx/html
 
