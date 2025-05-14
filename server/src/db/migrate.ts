@@ -3,6 +3,7 @@ import * as init from './migrations/001_init';
 import * as addUsers from './migrations/002_add_users';
 import * as addStatusToTasks from './migrations/003_add_status_to_tasks';
 import * as fixUserSchema from './migrations/004_fix_user_schema';
+import * as addEmailVerification from './migrations/005_add_email_verification';
 
 interface Migration {
   up: (pool: Pool) => Promise<void>;
@@ -14,7 +15,8 @@ const migrations: Migration[] = [
   init as Migration,
   addUsers as Migration,
   addStatusToTasks as Migration,
-  fixUserSchema as Migration
+  fixUserSchema as Migration,
+  addEmailVerification as Migration
 ];
 
 export async function runMigrations(pool: Pool) {

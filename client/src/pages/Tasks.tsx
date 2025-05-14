@@ -150,7 +150,10 @@ export function Tasks() {
   const [suggestions, setSuggestions] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { logout } = useAuth();
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [apiTestResult, setApiTestResult] = useState<string | null>(null);
+  const { logout, deleteAccount } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -282,6 +285,62 @@ export function Tasks() {
     navigate('/');
   };
 
+  const testApiConnection = async () => {
+    setApiTestResult("Testing API connection...");
+    try {
+      // Log environment information
+      console.log("Current environment:", {
+        windowLocation: window.location.href,
+        hostname: window.location.hostname,
+        apiUrl: import.meta.env.VITE_API_URL || 'not set'
+      });
+      
+      // Try to fetch tasks endpoint instead of health endpoint
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setApiTestResult("Cannot test API: No authentication token found");
+        return;
+      }
+      
+      // Use a simple relative URL for the API
+      const tasksUrl = '/api/tasks';
+      console.log("Testing API with URL:", tasksUrl);
+      
+      const response = await fetch(tasksUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setApiTestResult(`API test successful: ${JSON.stringify(data).slice(0, 50)}...`);
+      setError(null);
+    } catch (err) {
+      console.error('API test error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setApiTestResult(`API test failed: ${errorMessage}. Check console for details.`);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await deleteAccount();
+      // No need to navigate, the deleteAccount function will call logout which will redirect
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Failed to delete account: ${errorMessage}`);
+      setShowDeleteModal(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) return <div className={styles.container}>Loading...</div>;
 
   return (
@@ -289,12 +348,32 @@ export function Tasks() {
       <div className={styles.container}>
         <div className={styles.header}>
           <h1 className={styles.title}>My Tasks</h1>
-          <button onClick={handleLogout} className={styles.logoutButton}>
-            Logout
-          </button>
+          <div>
+            <button
+              onClick={testApiConnection}
+              className={styles.testButton}
+              style={{ marginRight: '10px' }}
+            >
+              Test API
+            </button>
+            <button 
+              onClick={() => setShowDeleteModal(true)} 
+              className={styles.settingsButton}
+            >
+              Settings
+            </button>
+            <button onClick={handleLogout} className={styles.logoutButton}>
+              Logout
+            </button>
+          </div>
         </div>
         
         {error && <div className={styles.error}>{error}</div>}
+        {apiTestResult && (
+          <div className={apiTestResult.includes('failed') ? styles.error : styles.success}>
+            {apiTestResult}
+          </div>
+        )}
         
         <form onSubmit={handleAddTask} className={styles.addForm}>
           <div className={styles.inputContainer}>
@@ -341,6 +420,32 @@ export function Tasks() {
             deleteTask={deleteTask}
           />
         </div>
+
+        {/* Delete Account Modal */}
+        {showDeleteModal && (
+          <div className={styles.modalOverlay}>
+            <div className={styles.modalContent}>
+              <h3 className={styles.modalTitle}>Delete Account</h3>
+              <p>Are you sure you want to delete your account? This action cannot be undone and will delete all your tasks.</p>
+              <div className={styles.modalButtons}>
+                <button 
+                  onClick={() => setShowDeleteModal(false)} 
+                  className={styles.cancelButton}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDeleteAccount} 
+                  className={styles.dangerButton}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete Account'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DndProvider>
   );

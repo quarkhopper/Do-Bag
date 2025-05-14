@@ -6,6 +6,7 @@ import { taskRouter } from './routes/tasks';
 import { authRouter } from './routes/auth';
 import { errorHandler } from './middleware/errorHandler';
 import { initializeDatabase } from './db';
+import { initializeEmailService } from './services/emailService';
 
 dotenv.config();
 
@@ -23,7 +24,11 @@ app.use(express.json());
 // Initialize database before starting the server
 async function startServer() {
   try {
+    // Initialize database connection
     await initializeDatabase();
+    
+    // Initialize email service
+    await initializeEmailService();
     
     // Health check endpoint
     app.get('/health', (req, res) => {
