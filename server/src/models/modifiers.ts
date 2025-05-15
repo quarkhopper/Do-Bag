@@ -42,6 +42,8 @@ export interface Task {
   updated_at: Date;
   user_id: string;
   status: 'bag' | 'shelf';
+  is_template?: boolean;
+  template_id?: string;
 }
 
 /**

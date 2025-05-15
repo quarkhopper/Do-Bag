@@ -26,6 +26,10 @@ export interface Task {
   updated_at: string;
   user_id: string;  // UUID
   status: 'bag' | 'shelf';
+  is_template?: boolean;
+  template_id?: string;
+  usage_count?: number;         // Count of tasks instantiated from this template
+  template_info?: Task;         // Information about the template a task was created from
 }
 
 export const tasksApi = {
@@ -64,11 +68,42 @@ export const tasksApi = {
   updateTaskPosition: async (id: string, position: number) => {
     const response = await api.patch<Task>(`/api/tasks/${id}/position`, { position });
     return response.data;
-  },
-  deleteTask: async (id: string) => {
+  },  deleteTask: async (id: string) => {
     await api.delete(`/api/tasks/${id}`);
   },
-    getTaskWithModifiers: async (id: string) => {
+  
+  // Template-specific methods
+  getTemplates: async () => {
+    const response = await api.get<Task[]>('/api/tasks', { 
+      params: { templates: 'true' } 
+    });
+    return response.data;
+  },
+  
+  getNonTemplates: async () => {
+    const response = await api.get<Task[]>('/api/tasks', { 
+      params: { templates: 'false' } 
+    });
+    return response.data;
+  },
+  
+  createTemplate: async (task: Omit<Task, 'id' | 'created_at' | 'position' | 'user_id' | 'is_template'>) => {
+    // Set is_template to true and status to 'shelf' for templates
+    const templateTask = {
+      ...task,
+      status: 'shelf',
+      is_template: true
+    };
+    const response = await api.post<Task>('/api/tasks', templateTask);
+    return response.data;
+  },
+  
+  instantiateFromTemplate: async (templateId: string) => {
+    const response = await api.post<Task>(`/api/tasks/${templateId}/instantiate`);
+    return response.data;
+  },
+  
+  getTaskWithModifiers: async (id: string) => {
     // First get the task
     const response = await api.get<Task>(`/api/tasks/${id}`);
     const task = response.data;

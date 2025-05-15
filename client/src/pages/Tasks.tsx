@@ -34,33 +34,29 @@ const TaskItem = ({
   task, 
   index, 
   moveTask, 
-  changeStatus,
+  instantiateTemplate,
   deleteTask
 }: { 
   task: Task; 
   index: number; 
   moveTask: (dragIndex: number, hoverIndex: number) => void;
-  changeStatus: (id: string, status: 'bag' | 'shelf') => void;
+  instantiateTemplate?: (templateId: string) => void;
   deleteTask: (id: string) => void;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
+  const isTemplate = task.is_template || task.status === 'shelf';
   
-  // Set up drag source
+  // Set up drag source - only allow dragging bag items (not templates)
   const [{ isDragging }, drag] = useDrag({
     type: ItemTypes.TASK,
     item: { id: task.id, index, status: task.status },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-    end: (item, monitor) => {
-      const dropResult = monitor.getDropResult<{ status: 'bag' | 'shelf' }>();
-      if (item && dropResult && item.status !== dropResult.status) {
-        changeStatus(item.id, dropResult.status);
-      }
-    },
+    canDrag: !isTemplate, // Templates cannot be dragged
   });
 
-  // Set up drop target
+  // Set up drop target - only allow dropping in the same container
   const [, drop] = useDrop({
     accept: ItemTypes.TASK,
     hover: (item: { index: number; status: string }) => {
@@ -86,22 +82,56 @@ const TaskItem = ({
     },
   });
 
-  // Initialize drag and drop refs
-  drag(drop(ref));
+  // Initialize drag and drop refs - only for non-templates
+  if (!isTemplate) {
+    drag(drop(ref));
+  }
+  
   return (
     <div 
       ref={ref}
-      className={`${styles.task} ${styles[getTaskStyle(task)]} ${isDragging ? styles.dragging : ''}`}
-    >
-      <div className={styles.taskContent}>
-        <span>{task.text}</span>
-        {task.status === 'shelf' && (
-          <button 
-            className={styles.deleteButton}
-            onClick={() => deleteTask(task.id)}
+      className={`${styles.task} ${styles[getTaskStyle(task)]} ${isDragging ? styles.dragging : ''} ${isTemplate ? styles.templateTask : ''}`}
+    >      <div className={styles.taskContent}>
+        <span>
+          {task.text}
+          {/* Show usage count for templates */}
+          {isTemplate && task.usage_count !== undefined && task.usage_count > 0 && (
+            <span className={styles.usageCount} title={`Used ${task.usage_count} times`}>
+              {task.usage_count}
+            </span>
+          )}
+        </span>
+        
+        {/* Template actions */}
+        {isTemplate && (
+          <div className={styles.templateActions}>
+            {/* Instantiate button */}
+            <button 
+              className={styles.instantiateButton}
+              onClick={() => instantiateTemplate && instantiateTemplate(task.id)}
+              title="Create a task from this template"
+            >
+              📋
+            </button>
+            
+            {/* Delete button */}
+            <button 
+              className={styles.deleteButton}
+              onClick={() => deleteTask(task.id)}
+              title="Delete this template"
+            >
+              🗑️
+            </button>
+          </div>
+        )}
+          {/* Regular task actions */}
+        {!isTemplate && task.template_id && (
+          <div 
+            className={styles.templateIndicator} 
+            title={task.template_info ? `Created from template: ${task.template_info.text}` : "Created from a template"}
           >
-            🗑️
-          </button>
+            📋
+          </div>
         )}
       </div>
     </div>
@@ -114,30 +144,39 @@ const TaskContainer = ({
   status, 
   tasks, 
   moveTask,
-  changeStatus,
+  instantiateTemplate,
   deleteTask
 }: { 
   title: string; 
   status: 'bag' | 'shelf'; 
   tasks: Task[]; 
   moveTask: (dragIndex: number, hoverIndex: number) => void;
-  changeStatus: (id: string, status: 'bag' | 'shelf') => void;
+  instantiateTemplate: (templateId: string) => void;
   deleteTask: (id: string) => void;
 }) => {
+  // Only allow dropping in the bag, not in the templates shelf
   const [{ isOver }, drop] = useDrop({
     accept: ItemTypes.TASK,
     drop: () => ({ status }),
     collect: monitor => ({
       isOver: monitor.isOver(),
     }),
+    canDrop: () => status === 'bag', // Only allow dropping in the bag
   });
 
   return (
     <div 
-      ref={drop} 
-      className={`${styles.taskContainer} ${isOver ? styles.isOver : ''}`}
+      ref={status === 'bag' ? drop : null} 
+      className={`${styles.taskContainer} ${isOver ? styles.isOver : ''} ${status === 'shelf' ? styles.templatesContainer : ''}`}
     >
-      <h2 className={styles.containerTitle}>{title}</h2>
+      <h2 className={styles.containerTitle}>
+        {status === 'shelf' ? 'Templates' : title}
+        {status === 'shelf' && (
+          <span className={styles.templateHint}>
+            (Click a template to create a task from it)
+          </span>
+        )}
+      </h2>
       <div className={styles.taskList}>
         {tasks
           .filter(task => task.status === status)
@@ -147,13 +186,13 @@ const TaskContainer = ({
               task={task} 
               index={index}
               moveTask={moveTask}
-              changeStatus={changeStatus}
+              instantiateTemplate={status === 'shelf' ? instantiateTemplate : undefined}
               deleteTask={deleteTask}
             />
           ))}
         {tasks.filter(task => task.status === status).length === 0 && (
           <div className={styles.emptyContainer}>
-            No tasks
+            {status === 'shelf' ? 'No templates' : 'No tasks'}
           </div>
         )}
       </div>
@@ -192,11 +231,17 @@ export function Tasks() {
     
     setSuggestions(filteredSuggestions);
   }, [newTaskText, tasks]);
-
   const loadTasks = async () => {
     try {
-      const tasks = await tasksApi.getTasks();
-      setTasks(tasks);
+      // Load both templates and regular tasks
+      const [templates, bagTasks] = await Promise.all([
+        tasksApi.getTemplates(),
+        tasksApi.getNonTemplates()
+      ]);
+      
+      // Combine them into a single array
+      const allTasks = [...templates, ...bagTasks];
+      setTasks(allTasks);
       setError(null);
     } catch (err) {
       setError('Failed to load tasks');
@@ -204,20 +249,37 @@ export function Tasks() {
     } finally {
       setLoading(false);
     }
-  };
-  const handleAddTask = async (e: React.FormEvent) => {
+  };const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskText.trim()) return;
     
-    try {      const newTask = await tasksApi.createTask({
-        text: newTaskText,
-        updated_at: new Date().toISOString(),
-        status: 'bag'
-      });
+    try {
+      // Check if Shift key is pressed to create a template instead of a task
+      const isTemplate = e.nativeEvent instanceof MouseEvent && e.nativeEvent.shiftKey;
+        let newTask;
+      if (isTemplate) {
+        newTask = await tasksApi.createTemplate({
+          text: newTaskText,
+          updated_at: new Date().toISOString(),
+          status: 'shelf' // Required status field
+        });
+      } else {
+        newTask = await tasksApi.createTask({
+          text: newTaskText,
+          updated_at: new Date().toISOString(),
+          status: 'bag'
+        });
+      }
       
       setTasks([...tasks, newTask]);
       setNewTaskText('');
       setError(null);
+      
+      // Show feedback about template creation
+      if (isTemplate) {
+        setApiTestResult('Template created successfully! It will appear in your Templates shelf.');
+        setTimeout(() => setApiTestResult(null), 3000);
+      }
     } catch (err) {
       setError('Failed to add task');
       console.error(err);
@@ -278,19 +340,33 @@ export function Tasks() {
       setError('Failed to delete task');
     }
   };
+  // Instantiate a task from a template
+  const instantiateTemplate = async (templateId: string) => {
+    try {
+      // Create a new task from the template
+      const newTask = await tasksApi.instantiateFromTemplate(templateId);
+      
+      // Update the local state
+      setTasks([...tasks, newTask]);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to instantiate template', err);
+      setError('Failed to create task from template');
+    }
+  };
 
   // Handle a suggestion being selected
-  const handleSelectSuggestion = async (task: Task) => {
+  const handleSelectSuggestion = async (template: Task) => {
     try {
-      // Update the task status in the API
-      await changeStatus(task.id, 'bag');
+      // Create a new task from the template
+      await instantiateTemplate(template.id);
       
       // Clear the input and suggestions
       setNewTaskText('');
       setSuggestions([]);
     } catch (err) {
-      console.error('Failed to select suggestion', err);
-      setError('Failed to move task');
+      console.error('Failed to create from suggestion', err);
+      setError('Failed to create task from template');
     }
   };
 
@@ -388,7 +464,12 @@ export function Tasks() {
             {apiTestResult}
           </div>
         )}
-        
+          <div className={styles.instructions}>
+          <p>
+            <strong>Tip:</strong> Hold Shift when clicking "Add Task" to create a template instead of a regular task.
+          </p>
+        </div>
+
         <form onSubmit={handleAddTask} className={styles.addForm}>
           <div className={styles.inputContainer}>
             <input
@@ -400,29 +481,26 @@ export function Tasks() {
             />
             {suggestions.length > 0 && (
               <div className={styles.suggestions}>
-                {suggestions.map(suggestion => (
-                  <div 
+                {suggestions.map(suggestion => (                  <div 
                     key={suggestion.id} 
                     className={styles.suggestion}
                     onClick={() => handleSelectSuggestion(suggestion)}
                   >
                     <span>{suggestion.text}</span>
-                    <small>Move from shelf</small>
+                    <small>Create from template</small>
                   </div>
                 ))}
               </div>
             )}
           </div>
           <button type="submit" className={styles.button}>Add Task</button>
-        </form>
-
-        <div className={styles.tasksLayout}>
+        </form>        <div className={styles.tasksLayout}>
           <TaskContainer 
-            title="Tasks Shelf" 
+            title="Task Templates" 
             status="shelf" 
             tasks={tasks} 
             moveTask={moveTask} 
-            changeStatus={changeStatus} 
+            instantiateTemplate={instantiateTemplate} 
             deleteTask={deleteTask}
           />
           <TaskContainer 
@@ -430,7 +508,7 @@ export function Tasks() {
             status="bag" 
             tasks={tasks} 
             moveTask={moveTask} 
-            changeStatus={changeStatus}
+            instantiateTemplate={instantiateTemplate}
             deleteTask={deleteTask}
           />
         </div>
