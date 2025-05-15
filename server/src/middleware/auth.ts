@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export interface AuthRequest extends Request {
-  userId: number;
+  userId: string;  // Changed to string for UUID compatibility
 }
 
 export const authMiddleware: RequestHandler = (
@@ -25,7 +25,7 @@ export const authMiddleware: RequestHandler = (
   
   try {
     console.log('Auth middleware: Verifying token');
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };  // Changed to string for UUID
     console.log('Auth middleware: Token verified, userId:', decoded.userId);
     (req as AuthRequest).userId = decoded.userId;
     next();
@@ -33,4 +33,4 @@ export const authMiddleware: RequestHandler = (
     console.error('Auth middleware: Invalid token', err);
     res.status(401).json({ message: 'Invalid token' });
   }
-}; 
+};

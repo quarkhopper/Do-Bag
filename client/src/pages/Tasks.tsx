@@ -4,11 +4,29 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import styles from './Tasks.module.css';
 import { tasksApi, Task } from '../api/tasks';
+import { TaskModifier } from '../api/modifiers';
 import { useAuth } from '../contexts/AuthContext';
+
+// Extended Task interface with optional modifiers
+interface ExtendedTask extends Task {
+  modifiers?: TaskModifier[];
+}
 
 // Item types for drag and drop
 const ItemTypes = {
   TASK: 'task'
+};
+
+// Generic function to get styling class based on available modifiers
+// This doesn't hardcode any specific modifier types
+const getTaskStyle = (task: ExtendedTask): string => {
+  if (!task.modifiers || task.modifiers.length === 0) {
+    return 'default'; // Default styling class when no modifiers are present
+  }
+  
+  // Let the style system determine the appearance based on whatever modifiers are present
+  // We don't make assumptions about which specific modifiers might affect styling
+  return 'with-modifiers';
 };
 
 // TaskItem component for individual tasks
@@ -22,8 +40,8 @@ const TaskItem = ({
   task: Task; 
   index: number; 
   moveTask: (dragIndex: number, hoverIndex: number) => void;
-  changeStatus: (id: number, status: 'bag' | 'shelf') => void;
-  deleteTask: (id: number) => void;
+  changeStatus: (id: string, status: 'bag' | 'shelf') => void;
+  deleteTask: (id: string) => void;
 }) => {
   const ref = useRef<HTMLDivElement>(null);
   
@@ -70,11 +88,10 @@ const TaskItem = ({
 
   // Initialize drag and drop refs
   drag(drop(ref));
-
   return (
     <div 
       ref={ref}
-      className={`${styles.task} ${styles[task.priority_hint || '']} ${isDragging ? styles.dragging : ''}`}
+      className={`${styles.task} ${styles[getTaskStyle(task)]} ${isDragging ? styles.dragging : ''}`}
     >
       <div className={styles.taskContent}>
         <span>{task.text}</span>
@@ -104,8 +121,8 @@ const TaskContainer = ({
   status: 'bag' | 'shelf'; 
   tasks: Task[]; 
   moveTask: (dragIndex: number, hoverIndex: number) => void;
-  changeStatus: (id: number, status: 'bag' | 'shelf') => void;
-  deleteTask: (id: number) => void;
+  changeStatus: (id: string, status: 'bag' | 'shelf') => void;
+  deleteTask: (id: string) => void;
 }) => {
   const [{ isOver }, drop] = useDrop({
     accept: ItemTypes.TASK,
@@ -188,15 +205,13 @@ export function Tasks() {
       setLoading(false);
     }
   };
-
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskText.trim()) return;
     
-    try {
-      const newTask = await tasksApi.createTask({
+    try {      const newTask = await tasksApi.createTask({
         text: newTaskText,
-        priority_hint: 'medium',
+        updated_at: new Date().toISOString(),
         status: 'bag'
       });
       
@@ -232,8 +247,7 @@ export function Tasks() {
       setTasks(tasks);
     }
   };
-
-  const changeStatus = async (id: number, status: 'bag' | 'shelf') => {
+  const changeStatus = async (id: string, status: 'bag' | 'shelf') => {
     try {
       // Find the task to update
       const taskIndex = tasks.findIndex(t => t.id === id);
@@ -252,7 +266,7 @@ export function Tasks() {
     }
   };
 
-  const deleteTask = async (id: number) => {
+  const deleteTask = async (id: string) => {
     try {
       // Delete from the API
       await tasksApi.deleteTask(id);
@@ -449,4 +463,4 @@ export function Tasks() {
       </div>
     </DndProvider>
   );
-} 
+}

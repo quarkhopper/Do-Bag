@@ -4,9 +4,12 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import { taskRouter } from './routes/tasks';
 import { authRouter } from './routes/auth';
+import { modifiersRouter } from './routes/modifiers';
 import { errorHandler } from './middleware/errorHandler';
 import { initializeDatabase } from './db';
 import { initializeEmailService } from './services/emailService';
+// Import modifiers to ensure they are registered at startup
+import './modifiers';
 
 dotenv.config();
 
@@ -33,11 +36,10 @@ async function startServer() {
     // Health check endpoint
     app.get('/health', (req, res) => {
       res.json({ status: 'ok' });
-    });
-
-    // Routes
+    });    // Routes
     app.use('/api/auth', authRouter);
     app.use('/api/tasks', taskRouter);
+    app.use('/api/modifiers', modifiersRouter);
 
     // Error handling
     app.use(errorHandler);
@@ -51,4 +53,4 @@ async function startServer() {
   }
 }
 
-startServer(); 
+startServer();

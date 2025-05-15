@@ -8,18 +8,16 @@ export const taskRouter = Router();
 // Apply auth middleware to all task routes
 taskRouter.use(authMiddleware);
 
+// Updated Task Schema without modifier fields
 const TaskSchema = z.object({
   text: z.string().min(1),
-  expected_duration: z.string().optional(),
-  is_divisible: z.boolean().optional(),
-  priority_hint: z.enum(['low', 'medium', 'high']).optional(),
   status: z.enum(['bag', 'shelf']).optional(),
 });
 
 type TaskInput = z.infer<typeof TaskSchema>;
 
 // Helper type for route handlers
-type AuthRequestHandler = RequestHandler<any, any, any, any, { userId: number }>;
+type AuthRequestHandler = RequestHandler<any, any, any, any, { userId: string }>;
 
 // Update GET tasks to only return user's tasks
 taskRouter.get('/', (async (req, res, next) => {
@@ -35,16 +33,16 @@ taskRouter.get('/', (async (req, res, next) => {
   }
 }) as AuthRequestHandler);
 
-// Update POST to include user_id and status
+// Update POST to include user_id and status, without modifier fields
 taskRouter.post('/', (async (req, res, next) => {
   try {
     const { userId } = req as AuthRequest;
     const task = TaskSchema.parse(req.body) as TaskInput;
     const result = await query(
-      `INSERT INTO tasks (text, expected_duration, is_divisible, priority_hint, position, user_id, status)
-       VALUES ($1, $2, $3, $4, (SELECT COALESCE(MAX(position), 0) + 1 FROM tasks WHERE user_id = $5), $5, $6)
+      `INSERT INTO tasks (text, position, user_id, status)
+       VALUES ($1, (SELECT COALESCE(MAX(position), 0) + 1 FROM tasks WHERE user_id = $2), $2, $3)
        RETURNING *`,
-      [task.text, task.expected_duration, task.is_divisible, task.priority_hint, userId, task.status || 'bag']
+      [task.text, userId, task.status || 'bag']
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -52,7 +50,7 @@ taskRouter.post('/', (async (req, res, next) => {
   }
 }) as AuthRequestHandler);
 
-// Update PATCH to verify ownership and include status updates
+// Update PATCH to verify ownership and include status updates, without modifier fields
 taskRouter.patch('/:id', (async (req, res, next) => {
   try {
     const { userId } = req as AuthRequest;
@@ -61,13 +59,10 @@ taskRouter.patch('/:id', (async (req, res, next) => {
     const result = await query(
       `UPDATE tasks
        SET text = COALESCE($1, text),
-           expected_duration = COALESCE($2, expected_duration),
-           is_divisible = COALESCE($3, is_divisible),
-           priority_hint = COALESCE($4, priority_hint),
-           status = COALESCE($5, status)
-       WHERE id = $6 AND user_id = $7
+           status = COALESCE($2, status)
+       WHERE id = $3 AND user_id = $4
        RETURNING *`,
-      [task.text, task.expected_duration, task.is_divisible, task.priority_hint, task.status, id, userId]
+      [task.text, task.status, id, userId]
     );
     
     if (result.rows.length === 0) {
