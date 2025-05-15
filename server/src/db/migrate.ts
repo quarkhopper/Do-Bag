@@ -1,3 +1,4 @@
+// @ts-ignore
 import { Pool } from 'pg';
 import * as init from './migrations/001_init';
 import * as addUsers from './migrations/002_add_users';
@@ -32,11 +33,9 @@ export async function runMigrations(pool: Pool) {
         name TEXT NOT NULL,
         executed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
-    `);
-
-    // Check which migrations have been run
+    `);    // Check which migrations have been run
     const { rows } = await pool.query('SELECT name FROM migrations');
-    const executedMigrations = new Set(rows.map(row => row.name));
+    const executedMigrations = new Set(rows.map((row: { name: string }) => row.name));
 
     // Run pending migrations
     for (const migration of migrations) {

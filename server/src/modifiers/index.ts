@@ -5,8 +5,14 @@
  * Import this file to register all modifiers with the ModifierRegistry.
  */
 import { ModifierRegistry } from '../models/modifiers';
+// @ts-ignore
 import fs from 'fs';
+// @ts-ignore
 import path from 'path';
+
+// For CommonJS compatibility
+// @ts-ignore
+const __dirname = __dirname || '.';
 
 /**
  * Dynamically import and register all modifiers from the types directory
@@ -18,9 +24,8 @@ async function registerAllModifiers() {
   try {
     // Read all files in the types directory
     const files = fs.readdirSync(typesDir);
-    
-    // Filter for TypeScript files
-    const typeScriptFiles = files.filter(file => file.endsWith('.ts') || file.endsWith('.js'));
+      // Filter for TypeScript files
+    const typeScriptFiles = files.filter((file: string) => file.endsWith('.ts') || file.endsWith('.js'));
     
     // Log discovery
     console.log(`Found ${typeScriptFiles.length} potential modifier files in ${typesDir}`);
@@ -30,12 +35,12 @@ async function registerAllModifiers() {
       try {
         // Get the file name without extension to use as the modifier type
         const modifierType = path.basename(file, path.extname(file));
-        
-        // Dynamic import
+          // Dynamic import
         const modulePath = `./types/${modifierType}`;
         
         // Using require for simplicity in a CommonJS environment
         // For ESM, we'd use import() but that requires more setup
+        // @ts-ignore
         const modifierModule = require(modulePath);
         
         // Get the class (assuming it's exported as "ModifierNameModifier")

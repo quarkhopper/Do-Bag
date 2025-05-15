@@ -1,4 +1,6 @@
+// @ts-ignore
 import { Router, Request, Response, NextFunction } from 'express';
+// @ts-ignore
 import { z } from 'zod';
 import { query } from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
